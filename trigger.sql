@@ -1,76 +1,87 @@
 use DB_Programming
-select * from Marks
-create Table Marks
-( 
-   Marks_Science int,
-   Marks_Math int,
-   Marks_English int
-)
-/*First create trigger for insert*/
-
-create trigger MarkTrigger on Marks
-after insert                                     -------------use for or after any both are same---------
-as
-declare @Marks_science int
-declare @Marks_Math int                             -------------Declaring the variable------
-declare @Marks_English int
-
-select @Marks_science=Marks_science from inserted           ----------use for insert into table-------
-select @Marks_Math=Marks_Math from inserted
-select @Marks_English=Marks_English from inserted
-
-if @Marks_science < 60
-begin
-print 'Student Marks Must be Greater than 60 in Science'
-rollback
-end
-if @Marks_Math < 60
-begin
-print 'Student Marks Must be Greater than 60 in Math'
-rollback
-end
-if @Marks_English < 60
-begin
-print 'Student Marks Must be Greater than 60 in English'
-rollback
-end
-else
-begin
-print 'Student Enrollment Successfull'
-end
-
-select * from Marks
-
-insert into Marks(Marks_science,Marks_Math,Marks_English)
-values(60,91,69)
-
-------------------------------=======================================-------------------------------------
-----------------=============trigger for delete row=====================-----------------------------------
-
-create Table Mark
-( 
-   Marks_Science int,
-   Marks_Math int,
-   Marks_English int
-)
- trigger DeleteTrigger on Marks
-for delete
-as
-declare @Marks_science int
-declare @Marks_Math int                             -------------Declaring the variable------
-declare @Marks_English int
-
-select @Marks_science=Marks_science from deleted           ----------use for insert into table-------
-select @Marks_Math=Marks_Math from deleted
-select @Marks_English=Marks_English from deleted
-
-insert into mark(Marks_science,Marks_Math,Marks_English)       -------creating new table and inserted into table----  
-values(@Marks_science,@Marks_Math,@Marks_English)
-print 'Students Mark inserted Successfull'
 
 
+-- create a Table
+create Table Employees
+(
+	Employee_Id int identity(10,1) primary key,
+	Employee_Name varchar(Max),
+	Mobile bigint,
+	Email varchar(200),
+	Address varchar(Max),
+	Gender char,
+	Department varchar(Max)
+);
 
-select * from Marks
-select * from mark
+-- create a Audit Table
+create table EmployeeAudit
+(
+	Id int,
+	Inserted_By varchar(Max),
+	Audit_Data varchar(Max)
+);
 
-delete from Marks where Marks_science=70
+/*--- Create Trigger for Insert ---*/
+Create Trigger Trg_Insert_Employees
+on Employees
+For Insert
+As
+Begin
+	Declare @Id int
+	select @Id = Employee_Id from inserted
+	Insert into EmployeeAudit (Id,Inserted_By,Audit_Data)
+	values(@Id, ORIGINAL_LOGIN(), 
+	'New Employee with Employee Id ='+ CAST(@Id as nvarchar(5))+ ' is added at '+ CAST(GETDATE() as nvarchar(20)))
+End;
+
+Insert Into Employees values('john',78563342378,'john4115@gmail.com','bangalore,karnataka', 'M','Software Developer');
+select * from EmployeeAudit;
+select * from Employees;
+
+
+/****** Drop a Trigger *********/
+DROP TRIGGER IF EXISTS Trg_Insert_Employee;
+
+/****** Trigger For Delete ******/
+Create or Alter Trigger Trg_Delete_Employees
+on Employees
+For Delete
+As
+Begin
+	Declare @Id int
+	select @Id = Employee_Id from deleted
+	Insert into EmployeeAudit (Id,Inserted_By,Audit_Data)
+	values(@Id, ORIGINAL_LOGIN(), 
+	'Employee with Employee Id ='+ CAST(@Id as nvarchar(5))+ ' is Deleted at '+ CAST(GETDATE() as nvarchar(20)))
+End;
+
+Delete from Employees where Employee_Id = 11;
+select * from EmployeeAudit;
+select * from Employees;
+
+/****** Trigger No Delete Permission ******/
+Create or Alter Trigger Trg_NoDelete_Employees
+on Employees
+For Delete
+As
+Begin
+	rollback
+	print '==================================';
+	print 'You do not have permission to delete';
+	print '==================================';
+End;
+
+/****** Trigger For Update ******/
+-- Basic Update Trigger
+Create or Alter Trigger Trg_Update_Employees
+on Employees
+For Update
+As
+Begin
+	select * from deleted;
+	select * from inserted;
+End;
+
+select * from EmployeeAudit;
+select * from Employees
+update Employees set Employee_Name = 'Naveen Mabbu' where Employee_Id = 11;

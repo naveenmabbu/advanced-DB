@@ -1,165 +1,152 @@
-/---- Create Database ----/
-create database Sales
+use DB_Programming
 
-/---- Use Database ----/
-use Sales
 
-/---- Create Table in Database ----/
-Create table Customer
-(
-        Customer_Id int Identity(10,1) Primary key,
-        Customer_Name varchar(255),
-        Customer_Mobile bigint,
-        Address varchar(255),
-        City varchar(255),
-        Postal_Code bigint,
-        Country varchar(255),
-        Gender char null Default 'M'
-);
-
-/---- Insert some dummy data in Table ----/
-insert into Customer 
-values ('Jack', 2323121, 'belgaum', 'belgaum', 9009009008,'India', 'M'),
-('Rock', 1234569, 'Bangalore', 'Bangalore', 987654321,'India', 'M'),
-('Hema', 2345679, 'Mumbai', 'Mumbai',8765432109,'India', 'F'),
-('Khali', 3456789, 'Chennai', 'Chennai', 7654321098, 'India', 'M'),
-('Rekha', 45678909, 'Delhi', 'Delhi', 6543210987, 'India', 'F');
-
-/---- Querying data from Table using Select keyword and Where Clause----/
+/*----Create Stored Procedures ----*/
+create procedure spCustomersList
+as
 select * from Customer
-select Customer_Name From Customer
-select distinct Country from Customer;
-select * from Customer where Country = 'India';
+go;
+exec spCustomersList
 
-/---- Sorting data from Table using Select keyword and order by Clause----/
-select * from Customer order by City Asc;
+/*----Modify Existing Stored Procedures ----*/
+ALTER procedure spCustomersList
+as
+Begin
+select Customer_Name from Customer 
+where Customer_Id = 10
+End;
+exec spCustomersList
 
+CREATE OR ALTER procedure uspProductList
+AS
+BEGIN
+select * from product;
+END;
 
-/---- Create a backup of Existing Table by Select Into ----/
-select * into CustomerBackup from Customer;
-/---- Check Backup table Records ----/
-select * from CustomerBackup;
-/---- Remove a table or Database using Drop ----/
-drop table CustomerBackup
+exec uspProductList;
 
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                                                                    
-		                                                   ----------------stored procedure-------------
+/*---- Delete Existing Stored Procedures ----*/
+Drop procedure uspProductList;
 
-CREATE PROCEDURE SelectAllCity
-AS                                                  -----Section 1------
+/*---- Stored Procedure With One Parameter ----*/
+CREATE PROCEDURE FindProducts(@min_list_price AS DECIMAL)
+AS
+BEGIN
+    SELECT
+        Product_Name,
+        Price
+    FROM 
+       product
+    WHERE
+        Price >= @min_list_price
+    ORDER BY
+        Price;
+END;
 
-SelectAllCity                   ---Any keyword Can use--
-exec SelectAllCity            ----
-------------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------------------
-create table EmpDetails
-(                                                 -----storedProcedure with parameters----
-    EmployeeID int identity(1,1) primary key,
-    FirstName  varchar(255),
-    LastName varchar(255),
-    Address varchar(255),
-    City varchar(255),
-    MobileNo varchar(13),
-	Gender varchar(6),
-	Salary money not null
- 
-);
---------------------------------------------------------------------------------------------------------------
---------------------------------------------------------------------------------------------------------------
-------------------------------Create And Insert By StoresProcedure-------------------------------------
+exec FindProducts 40000;
 
+/*---- Stored Procedure With Multiple Parameter ----*/
+Create PROCEDURE FindProductsbyMultipleParameter
+(
+     @min_list_price AS DECIMAL,
+     @max_list_price AS DECIMAL
+)
+AS
+BEGIN
+    SELECT
+        Product_name,
+        Price
+    FROM 
+        product
+    WHERE
+        Price >= @min_list_price AND
+        Price <= @max_list_price
+    ORDER BY
+        Price;
+END;
 
-create procedure SPEmployee   
-(   
-    @FirstName varchar(255),
-    @LastName varchar(255),
-    @Address varchar(255),
-    @City varchar(255),
-	@MobileNo varchar(13),
-	@Gender varchar(6),
-	@Salary int
-)   
-as    
-Begin    
-    Insert into EmpDetails (FirstName,LastName,Address,City,MobileNo,Gender,salary)    
-    Values 
-			(@FirstName,@LastName,@Address,@City,@MobileNo,@Gender,@Salary) 
-	 
-End
-SELECT * FROM EmpDetails
-EXEC SPEmployee @FirstName = '@FirstName',@LastName = '@LasteName',@Address='@Address',@City ='@City',@MobileNo = '@MobileNo',@Gender = '@Gender',@Salary='@Salary'
+Exec FindProductsbyMultipleParameter 20000, 80000;
 
+/*---- Stored Procedure with text parameters ----*/
+CREATE PROCEDURE FindProductsbyname(@name as varchar(max))
+AS
+BEGIN
+    SELECT
+        *
+    FROM 
+       product
+    WHERE
+        Product_name Like '%' + @name + '%'
+    ORDER BY
+        Price;
+END;
 
------------------------------------------------------------------------------------------------------------
-create procedure GetAllEntries  
-as   
-Begin                       -----------------------it defines A Block where We execute SQL statement-----------
-select
-	
-    FirstName,
-    LastName,
-    Address,
-    City,
-	MobileNo,
-	Gender
+Exec FindProductsbyname @name = 'i';
 
- from  EmpDetails
-End                  
+/*---- Stored Procedure with Variables ----*/
+/*--- Using variables in a query ---*/
+Declare @product_price decimal
+set @product_price = 35000
+select * from product
+where Price = @product_price
+order by Price;
 
-exec GetAllEntries;
----------------------------------------------------------------------------------------------------------------
---------------------------------------------------------------------------------------------------------------
-----------------------------------------Update Table Using StoredProcedure ------------------------------------------------------
+/*--- Storing query result in a variable ---*/
+DECLARE @product_count INT;
+set @product_count = (
+  select COUNT(*)
+  from product
+)
+print @product_count;
 
-create procedure UpdateEmployee     
-(     
-     @salary money   
-)     
-as     
-begin     
-   Update EmpDetails      
-   set                            -------------Assign Value we use SET------------
-	   Salary=@salary  
-	   where EmployeeID= 11
-End
+/*--- Selecting a record into variables ---*/
+DECLARE 
+    @product_name VARCHAR(MAX),
+    @list_price DECIMAL;
+SELECT 
+    @product_name = product_name,
+    @list_price = price
+FROM
+   product
+WHERE
+    product_id = 12;
+SELECT 
+    @product_name AS product_name, 
+    @list_price AS list_price;
 
-UpdateEmployee  @salary='39145'
+/* --- Accumulating values into a variable ----*/
+Create or Alter procedure useOfVariables (@min_price as Decimal)
+as
+begin
+    DECLARE @product_list VARCHAR(MAX);
+    SET @product_list = '';
+	SELECT @product_list = @product_list + product_name + CHAR(10)
+    FROM 
+        product
+    WHERE
+        Price >= @min_price
+   ORDER BY 
+        Price;
+    PRINT @product_list;
+END;
 
-SELECT * FROM EmpDetails
+Exec useOfVariables @min_price = 45000;
 
-
----------------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------------------
----------------------------------------Delete Rows Using StoredProcedure---------------------------------------
-
-Create procedure DeleteEmployee
-(     
-  @EmployeeID int     
-)     
-as     
-begin     
-   Delete from EmpDetails where EmployeeID=@EmployeeID
-
-End
-DeleteEmployee @EmployeeID=10
-
-SELECT * FROM EmpDetails
-
-select City, COUNT (*) from EmpDetails WHERE Address='us' GROUP BY Gender ORDER BY Gender;
-
-------------------------------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------
-Declare
- @FirstName varchar(100)                          ---------------Declare valriables---------
- 
- set @FirstName = 'naveen'
- select 
-  FirstName,
-  LastName,
-  City
-From EmpDetails where @FirstName= FirstName--,@LastName = LastName
-order by LastName
-
-
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* --- Creating Output Parameter ----*/
+create procedure outputParameter
+(
+	@min_price decimal,
+	@product_count int output
+)
+as
+begin
+   select Product_name, Price
+   from product
+   where Price>= @min_price
+   select @product_count = @@ROWCOUNT
+end;    
+declare @count int;
+Exec outputParameter
+  @min_price = 10000,
+  @product_count = @count output
+select @count as 'Number of Product';
